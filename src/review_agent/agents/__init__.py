@@ -1,0 +1,8 @@
+from .bug_agent import BUG_AGENT
+from .performance_agent import PERFORMANCE_AGENT
+from .quality_agent import QUALITY_AGENT
+from .security_agent import SECURITY_AGENT
+
+SPECIALIST_AGENTS = [BUG_AGENT, SECURITY_AGENT, PERFORMANCE_AGENT, QUALITY_AGENT]
+
+__all__ = ["SPECIALIST_AGENTS", "BUG_AGENT", "SECURITY_AGENT", "PERFORMANCE_AGENT", "QUALITY_AGENT"]

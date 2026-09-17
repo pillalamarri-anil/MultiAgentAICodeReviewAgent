@@ -1,0 +1,2 @@
+[console_scripts]
+review-agent = review_agent.cli:main
