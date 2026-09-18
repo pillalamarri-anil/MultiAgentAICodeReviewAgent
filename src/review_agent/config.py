@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     # job here (dedup/classify an already-distilled candidate list) doesn't need deep
     # reasoning, so a low default keeps cost down without an empty-response risk.
     openai_reasoning_effort: str = "low"
+    llm_max_retries: int = 5  # SDK-level backoff retries per call (429/5xx/timeouts)
+    # Client-side token-bucket caps (tokens/minute), keyed by role, so specialist calls
+    # are paced under the account's TPM limit instead of bursting 4-at-a-time and
+    # relying on reactive retries. None disables pacing for that role.
+    openai_specialist_tpm_limit: Optional[int] = 25000
+    openai_judge_tpm_limit: Optional[int] = 25000
 
     # --- GitHub ------------------------------------------------------
     github_token: Optional[SecretStr] = None
