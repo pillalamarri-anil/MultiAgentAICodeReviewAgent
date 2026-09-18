@@ -25,10 +25,17 @@ class Settings(BaseSettings):
     # --- LLM provider ---------------------------------------------------
     llm_provider: str = "mock"
     openai_api_key: Optional[SecretStr] = None
-    openai_model: Optional[str] = "gpt-4o"
+    openai_model: Optional[str] = "gpt-4o"  # fallback used when a role-specific model isn't set
+    openai_specialist_model: Optional[str] = "gpt-4.1-mini"  # bug/security/performance/quality agents
+    openai_judge_model: Optional[str] = "gpt-5"  # Judge Agent (once per PR)
     openai_base_url: Optional[str] = None
     llm_max_tokens: int = 4000
     llm_timeout_seconds: int = 90
+    # reasoning-family models (gpt-5, o1/o3/o4) only: "minimal"|"low"|"medium"|"high".
+    # Lower effort means fewer hidden reasoning tokens billed per call -- the Judge's
+    # job here (dedup/classify an already-distilled candidate list) doesn't need deep
+    # reasoning, so a low default keeps cost down without an empty-response risk.
+    openai_reasoning_effort: str = "low"
 
     # --- GitHub ------------------------------------------------------
     github_token: Optional[SecretStr] = None
@@ -65,6 +72,12 @@ class Settings(BaseSettings):
 
     def openai_key(self) -> Optional[str]:
         return self.openai_api_key.get_secret_value() if self.openai_api_key else None
+
+    def specialist_model(self) -> Optional[str]:
+        return self.openai_specialist_model or self.openai_model
+
+    def judge_model(self) -> Optional[str]:
+        return self.openai_judge_model or self.openai_model
 
     def gh_token(self) -> Optional[str]:
         return self.github_token.get_secret_value() if self.github_token else None

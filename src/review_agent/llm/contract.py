@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Tuple
+from typing import Optional, Tuple
 
 from pydantic import ValidationError
 
@@ -58,15 +58,16 @@ def parse_judge(raw: str) -> JudgeReview:
     return JudgeReview.model_validate(data)
 
 
-def review_file(provider: LLMProvider, system: str, user: str, target_file: str) -> FileReviewResult:
-    raw, err = _try(provider, system, user, parse_review)
+def review_file(provider: LLMProvider, system: str, user: str, target_file: str, *,
+                model: Optional[str] = None) -> FileReviewResult:
+    raw, err = _try(provider, system, user, parse_review, model=model)
     if isinstance(raw, LLMReview):
         return FileReviewResult(file=target_file, status="ok",
                                 summary=raw.summary, findings=list(raw.findings))
 
     # one repair retry
     repair_user = user + _REPAIR_SUFFIX + str(err)[:400]
-    raw2, err2 = _try(provider, system, repair_user, parse_review)
+    raw2, err2 = _try(provider, system, repair_user, parse_review, model=model)
     if isinstance(raw2, LLMReview):
         return FileReviewResult(file=target_file, status="ok", repaired=True,
                                 summary=raw2.summary, findings=list(raw2.findings))
@@ -77,16 +78,17 @@ def review_file(provider: LLMProvider, system: str, user: str, target_file: str)
     )
 
 
-def judge_review(provider: LLMProvider, system: str, user: str) -> JudgeRunResult:
+def judge_review(provider: LLMProvider, system: str, user: str, *,
+                 model: Optional[str] = None) -> JudgeRunResult:
     """Judge Agent counterpart of ``review_file`` -- same strict-parse + one-repair-retry
     contract, against ``JudgeReview`` instead of ``LLMReview`` (PRD-multi-agent-p0 s7)."""
-    raw, err = _try(provider, system, user, parse_judge)
+    raw, err = _try(provider, system, user, parse_judge, model=model)
     if isinstance(raw, JudgeReview):
         return JudgeRunResult(status="ok", summary=raw.summary,
                               findings=list(raw.findings), rejected=list(raw.rejected))
 
     repair_user = user + _JUDGE_REPAIR_SUFFIX + str(err)[:400]
-    raw2, err2 = _try(provider, system, repair_user, parse_judge)
+    raw2, err2 = _try(provider, system, repair_user, parse_judge, model=model)
     if isinstance(raw2, JudgeReview):
         return JudgeRunResult(status="ok", repaired=True, summary=raw2.summary,
                               findings=list(raw2.findings), rejected=list(raw2.rejected))
@@ -97,9 +99,10 @@ def judge_review(provider: LLMProvider, system: str, user: str) -> JudgeRunResul
     )
 
 
-def _try(provider: LLMProvider, system: str, user: str, parse_fn) -> Tuple[object, object]:
+def _try(provider: LLMProvider, system: str, user: str, parse_fn, *,
+        model: Optional[str] = None) -> Tuple[object, object]:
     try:
-        raw = provider.complete(system, user)
+        raw = provider.complete(system, user, model=model)
     except LLMError as e:
         return None, e
     try:

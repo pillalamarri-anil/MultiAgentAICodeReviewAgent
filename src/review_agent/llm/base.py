@@ -7,7 +7,7 @@ tests and offline dev (PRD s6).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol
+from typing import Optional, Protocol
 
 _PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
@@ -20,8 +20,12 @@ class LLMProvider(Protocol):
     name: str
     total_tokens: int  # cumulative tokens consumed across every ``complete()`` call so far
 
-    def complete(self, system: str, user: str) -> str:
-        """Return the model's raw text response (expected to be a JSON object)."""
+    def complete(self, system: str, user: str, *, model: Optional[str] = None) -> str:
+        """Return the model's raw text response (expected to be a JSON object).
+
+        ``model`` optionally overrides the provider's default for this one call, so
+        callers can route different roles (specialist agents vs. Judge) to different
+        models on the same shared provider instance."""
 
 
 def load_prompt(name: str) -> str:

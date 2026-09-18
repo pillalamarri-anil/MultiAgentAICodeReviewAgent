@@ -39,7 +39,7 @@ def test_review_file_repairs_once_then_ok():
         def __init__(self):
             self.n = 0
 
-        def complete(self, system, user):
+        def complete(self, system, user, *, model=None):
             self.n += 1
             return "not json at all" if self.n == 1 else json.dumps(VALID)
 

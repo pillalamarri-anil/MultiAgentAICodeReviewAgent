@@ -155,7 +155,9 @@ def run(settings, inp: RunInputs) -> ReviewReport:
     started = time.monotonic()
     client = _make_client(settings)
     provider = build_provider(settings)
-    L.step(f"LLM provider: {provider.name}")
+    specialist_model = settings.specialist_model()
+    judge_model = settings.judge_model()
+    L.step(f"LLM provider: {provider.name} (specialists: {specialist_model}, judge: {judge_model})")
 
     diff_text = _resolve_diff(inp, client)
     pr_info = _gather_pr_info(inp, client)
@@ -203,7 +205,7 @@ def run(settings, inp: RunInputs) -> ReviewReport:
             L.step(f"[{change.file}] running specialist agents in parallel: "
                    + ", ".join(a.name for a in SPECIALIST_AGENTS))
             file_results = _run_specialists(executor, provider, system, change.file, ctx_text,
-                                            pr_info, repo_slug)
+                                            pr_info, repo_slug, specialist_model)
             for r in file_results:
                 if r.status == "failed":
                     L.warn(f"[{change.file}] {r.agent}: FAILED — {r.error}")
@@ -230,7 +232,7 @@ def run(settings, inp: RunInputs) -> ReviewReport:
                f"from {len(all_agent_results)} agent run(s)")
         judge_result = run_judge(provider, all_agent_results, pr_id=pr_info.id, repo=repo_slug,
                                  target_branch=pr_info.target_branch,
-                                 source_branch=pr_info.source_branch)
+                                 source_branch=pr_info.source_branch, model=judge_model)
         if judge_result.status == "failed":
             L.error(f"Judge Agent failed: {judge_result.error}")
             raise JudgeFailure(f"REVIEW_INCOMPLETE: Judge Agent failed: {judge_result.error}")
@@ -281,14 +283,15 @@ def run(settings, inp: RunInputs) -> ReviewReport:
 
 
 def _run_specialists(executor: ThreadPoolExecutor, provider, system: str, target_file: str,
-                     ctx_text: str, pr_info: PRInfo, repo_slug: str) -> List[AgentResult]:
+                     ctx_text: str, pr_info: PRInfo, repo_slug: str,
+                     model: Optional[str] = None) -> List[AgentResult]:
     """Run the 4 specialist agents for one file concurrently (threads, since the LLM
     provider call is blocking network I/O). One agent failing never stops the others
     (G5)."""
     future_to_agent = {
         executor.submit(agent.review, provider, system, context=ctx_text, target_file=target_file,
                         pr_id=pr_info.id, repo=repo_slug, target_branch=pr_info.target_branch,
-                        source_branch=pr_info.source_branch): agent
+                        source_branch=pr_info.source_branch, model=model): agent
         for agent in SPECIALIST_AGENTS
     }
     results: List[AgentResult] = []

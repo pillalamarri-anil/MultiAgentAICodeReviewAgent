@@ -11,7 +11,7 @@ Judge's job is credibility, duplication, severity and confidence, not diff place
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 from ..llm.base import LLMProvider, judge_system_prompt, judge_user_prompt
 from ..llm.contract import judge_review
@@ -37,8 +37,8 @@ def _render_candidates(agent_results: List[AgentResult]) -> str:
 
 
 def run_judge(provider: LLMProvider, agent_results: List[AgentResult], *, pr_id, repo: str,
-             target_branch: str, source_branch: str) -> JudgeRunResult:
+             target_branch: str, source_branch: str, model: Optional[str] = None) -> JudgeRunResult:
     system = judge_system_prompt()
     user = judge_user_prompt(candidates=_render_candidates(agent_results), pr_id=pr_id, repo=repo,
                              target_branch=target_branch, source_branch=source_branch)
-    return judge_review(provider, system, user)
+    return judge_review(provider, system, user, model=model)

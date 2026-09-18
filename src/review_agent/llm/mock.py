@@ -49,7 +49,7 @@ class MockProvider:
                 return resp
         return self.default
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, *, model: Optional[str] = None) -> str:
         self.calls.append((system, user))
         if self.raw is not None:
             content = self.raw
