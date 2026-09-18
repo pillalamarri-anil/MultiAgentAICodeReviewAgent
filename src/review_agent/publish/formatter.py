@@ -39,7 +39,7 @@ def inline_comment(f: Finding) -> str:
 
 def summary_comment(findings: List[Finding], gate: GateResult, *, provider: str,
                     failed_files: List[str], unplaced: List[Finding],
-                    agent_names: Optional[List[str]] = None) -> str:
+                    agent_names: Optional[List[str]] = None, tokens_used: int = 0) -> str:
     counts = gate.counts
     icon = "✅" if gate.status == "PASS" else "❌"
     out = [
@@ -74,5 +74,5 @@ def summary_comment(findings: List[Finding], gate: GateResult, *, provider: str,
                 ". These files were not reviewed."]
 
     out += ["", f"<sub>provider: {provider} · {len(findings)} finding(s) confirmed by the "
-                 "Judge Agent, after validation & dedup</sub>"]
+                 f"Judge Agent, after validation & dedup · {tokens_used} token(s) consumed</sub>"]
     return "\n".join(out)

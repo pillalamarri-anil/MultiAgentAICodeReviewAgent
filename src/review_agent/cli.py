@@ -108,6 +108,7 @@ def _print_findings_summary(report) -> None:
     print("\n=== CODE REVIEW SUMMARY ===", file=sys.stderr)
     if report.summary:
         print(report.summary, file=sys.stderr)
+    print(f"Tokens consumed: {report.tokens_used}", file=sys.stderr)
 
     findings = sorted(report.findings,
                       key=lambda f: (_SEV_ORDER[f.severity.value], -f.confidence))

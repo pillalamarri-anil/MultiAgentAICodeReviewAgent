@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+
 from .base import LLMError
 
 
@@ -31,6 +33,8 @@ class OpenAIProvider:
             timeout=settings.llm_timeout_seconds,
             max_retries=2,
         )
+        self.total_tokens = 0
+        self._usage_lock = threading.Lock()
 
     def complete(self, system: str, user: str) -> str:
         try:
@@ -46,6 +50,11 @@ class OpenAIProvider:
             )
         except Exception as e:  # openai raises many subclasses; treat all as call failure
             raise LLMError(f"OpenAI call failed: {e}") from e
+
+        usage = getattr(resp, "usage", None)
+        if usage is not None:
+            with self._usage_lock:
+                self.total_tokens += getattr(usage, "total_tokens", 0) or 0
 
         choice = (resp.choices or [None])[0]
         content = getattr(getattr(choice, "message", None), "content", None)

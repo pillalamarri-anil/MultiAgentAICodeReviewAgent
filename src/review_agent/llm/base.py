@@ -18,6 +18,7 @@ class LLMError(RuntimeError):
 
 class LLMProvider(Protocol):
     name: str
+    total_tokens: int  # cumulative tokens consumed across every ``complete()`` call so far
 
     def complete(self, system: str, user: str) -> str:
         """Return the model's raw text response (expected to be a JSON object)."""

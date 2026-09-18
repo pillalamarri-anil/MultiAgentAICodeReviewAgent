@@ -266,15 +266,17 @@ def run(settings, inp: RunInputs) -> ReviewReport:
         duration_seconds=round(time.monotonic() - started, 2),
         context_budget=ctx.budget,
         context_summary=_context_summary(ctx),
+        tokens_used=provider.total_tokens,
     )
 
     if inp.publish and client:
         _publish(client, pr_info, commit_sha, findings, gate, provider.name, failed_files,
-                 inp.status_url, _spans_by_file(ctx.changes), all_agent_results)
+                 inp.status_url, _spans_by_file(ctx.changes), all_agent_results,
+                 provider.total_tokens)
     elif inp.publish:
         L.warn("--publish set but no GitHub client (need GITHUB_TOKEN + GITHUB_REPOSITORY); skipping")
 
-    L.step(f"done in {report.duration_seconds}s")
+    L.step(f"done in {report.duration_seconds}s, {report.tokens_used} token(s) consumed")
     return report
 
 
@@ -312,7 +314,7 @@ def _agent_status_labels(all_agent_results: List[AgentResult]) -> List[str]:
 
 
 def _publish(client, pr_info, commit_sha, findings, gate, provider_name, failed_files,
-             status_url, spans_by_file, all_agent_results):
+             status_url, spans_by_file, all_agent_results, tokens_used):
     if pr_info.id is not None:
         unplaced: List[Finding] = []
         for f in findings:
@@ -328,7 +330,8 @@ def _publish(client, pr_info, commit_sha, findings, gate, provider_name, failed_
             unplaced.append(f)
         body = summary_comment(findings, gate, provider=provider_name,
                                failed_files=failed_files, unplaced=unplaced,
-                               agent_names=_agent_status_labels(all_agent_results))
+                               agent_names=_agent_status_labels(all_agent_results),
+                               tokens_used=tokens_used)
         _safe(lambda: client.post_summary_comment(pr_info.id, body))
         L.step("posted summary + inline comments")
     else:

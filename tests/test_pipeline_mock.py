@@ -80,6 +80,15 @@ def test_run_passes_when_clean(monkeypatch, sample_repo, diff):
     assert report.gate.status == "PASS" and report.gate.exit_code == 0
 
 
+def test_run_reports_tokens_consumed(monkeypatch, sample_repo, diff):
+    _patch_provider(monkeypatch, {})  # mock still makes real LLM calls, just no findings
+    report = run(_settings(), RunInputs(
+        repo_path=sample_repo, base="main", head="feat/x",
+        diff_text=diff("method_edit.diff"), publish=False,
+    ))
+    assert report.tokens_used > 0
+
+
 def test_run_drops_unevidenced_finding(monkeypatch, sample_repo, diff):
     # the Judge confirms it (LLM-level check missed the fabricated evidence) -- the
     # deterministic validator that runs AFTER the Judge is the backstop that catches it

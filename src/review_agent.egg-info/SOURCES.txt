@@ -14,6 +14,13 @@ src/review_agent.egg-info/dependency_links.txt
 src/review_agent.egg-info/entry_points.txt
 src/review_agent.egg-info/requires.txt
 src/review_agent.egg-info/top_level.txt
+src/review_agent/agents/__init__.py
+src/review_agent/agents/base.py
+src/review_agent/agents/bug_agent.py
+src/review_agent/agents/judge_agent.py
+src/review_agent/agents/performance_agent.py
+src/review_agent/agents/quality_agent.py
+src/review_agent/agents/security_agent.py
 src/review_agent/context/__init__.py
 src/review_agent/context/builder.py
 src/review_agent/context/comments_provider.py
@@ -32,7 +39,12 @@ src/review_agent/llm/base.py
 src/review_agent/llm/contract.py
 src/review_agent/llm/mock.py
 src/review_agent/llm/openai_provider.py
-src/review_agent/prompts/java_review.txt
+src/review_agent/prompts/bug_agent.txt
+src/review_agent/prompts/judge_agent.txt
+src/review_agent/prompts/judge_system.txt
+src/review_agent/prompts/performance_agent.txt
+src/review_agent/prompts/quality_agent.txt
+src/review_agent/prompts/security_agent.txt
 src/review_agent/prompts/system.txt
 src/review_agent/publish/__init__.py
 src/review_agent/publish/formatter.py
@@ -43,6 +55,7 @@ src/review_agent/review/__init__.py
 src/review_agent/review/dedup.py
 src/review_agent/review/scoring.py
 src/review_agent/review/validator.py
+tests/test_agents.py
 tests/test_contract.py
 tests/test_dedup.py
 tests/test_pipeline_mock.py

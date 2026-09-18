@@ -163,3 +163,5 @@ class ReviewReport(BaseModel):
     duration_seconds: float = 0.0
     context_budget: dict = Field(default_factory=dict)
     context_summary: dict = Field(default_factory=dict)
+    tokens_used: int = Field(
+        default=0, description="cumulative LLM tokens consumed across all agent + Judge calls")

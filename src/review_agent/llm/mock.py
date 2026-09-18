@@ -16,7 +16,10 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from typing import Dict, Optional, Union
+
+from ..context.tokens import count_tokens
 
 _TARGET_RE = re.compile(r'the file "([^"]+)"')
 _JUDGE_SYSTEM_MARKER = "You are the JUDGE AGENT"
@@ -35,6 +38,8 @@ class MockProvider:
         self.raw = raw
         self.judge_response = judge_response
         self.calls = []  # list of (system, user) for assertions
+        self.total_tokens = 0
+        self._usage_lock = threading.Lock()
 
     def _match(self, user: str) -> Optional[Response]:
         m = _TARGET_RE.search(user)
@@ -47,14 +52,21 @@ class MockProvider:
     def complete(self, system: str, user: str) -> str:
         self.calls.append((system, user))
         if self.raw is not None:
-            return self.raw
-        if system.strip().startswith(_JUDGE_SYSTEM_MARKER):
+            content = self.raw
+        elif system.strip().startswith(_JUDGE_SYSTEM_MARKER):
             resp = self.judge_response
             if resp is None:
                 resp = {"summary": "No candidate findings to confirm.",
                         "findings": [], "rejected": []}
-            return resp if isinstance(resp, str) else json.dumps(resp)
-        resp = self._match(user)
-        if resp is None:
-            resp = {"summary": "No issues found in the provided context.", "findings": []}
-        return resp if isinstance(resp, str) else json.dumps(resp)
+            content = resp if isinstance(resp, str) else json.dumps(resp)
+        else:
+            resp = self._match(user)
+            if resp is None:
+                resp = {"summary": "No issues found in the provided context.", "findings": []}
+            content = resp if isinstance(resp, str) else json.dumps(resp)
+
+        # No real API usage to report -- estimate with the same offline approximation
+        # used for context budgeting, so demo/offline runs still show a token count.
+        with self._usage_lock:
+            self.total_tokens += count_tokens(system) + count_tokens(user) + count_tokens(content)
+        return content
